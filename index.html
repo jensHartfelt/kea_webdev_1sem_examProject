@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Custom cms</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Header / Nav-bar -->
+  <div class="top-bar">
+    <div class="brand">
+      <a class="page-link" data-go-to-page="landing-page">Custom cms</a>
+    </div>
+    <div class="navigation">
+      <!-- 
+        Navigation will be inserted dynamically from get-menu.php
+        It seems a little bit off, to have markup in a php-file
+        but i think it is a more elegant solution than to do 
+      -->
+    </div>
+  </div>
+  
+  <!-- Page-container -->
+  <div id="masterContainer">
+    <!-- As with navigation content will be dynamically inserted here depending on the user role and session-->
+  </div>
+  
+  <!-- Spinner -->
+  <div id="spinner" class="spinner-container">
+    <div class="spinner">
+    </div>
+    <p></p>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
