@@ -455,7 +455,7 @@ var page = {
               <p class="price">'+products[i].price+' DKK</p>\
             </div>\
             <div>\
-              <a class="button positive add-product">Add to cart<i class="material-icons">add_shopping_cart</i></a>\
+              <a class="button positive btnAddProductToCart">Add to cart<i class="material-icons">add_shopping_cart</i></a>\
               <div class="u_clearfix"></div>\
             </div>\
           </div>\
@@ -493,7 +493,12 @@ var page = {
     }
   },
   updateAddToCartLinks: function() {
-
+    var btnsAddToCard = document.querySelectorAll(".btnAddProductToCart");
+    for (var i = 0; i < btnsAddToCard.length; i++) {
+      var currentProduct = page.getEl(e.path, "product");
+      var productId = currentProduct.getAttribute("data-product-id");
+      page.addProductToCart(productId);
+    }
   },
   updateEditProductForm: function(productId) {
     /* 
@@ -609,7 +614,15 @@ var page = {
    SHOPPING CART
   **********************/
   addProductToCart: function(productId) {
-
+    page.activateSpinner();
+    page.request({
+      type: "GET",
+      url: "api/get-product.php?productId="+productId,
+      callback: handleResponse
+    })
+    function handleResponse(res) {
+      console.log(res);
+    }
   },
   renderProductCart: function(productId) {
 
