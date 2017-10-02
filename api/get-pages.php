@@ -44,9 +44,6 @@ if ( isset($sUser) ) {
   <div class="page" data-page-id="edit-user">
     <div class="container small">
       <h2>Edit your profile</h2>
-      <div id="txtEditUserMessage" class="message succes">
-        <p>Your changes were saved</p>
-      </div>
 
       <h3>Profile preview</h3>
       <div id="displayCurrentUserData">
@@ -83,9 +80,6 @@ if ( isset($sUser) ) {
   <div class="page" data-page-id="view-products">
     <div class="container big">
       <h2>Products</h2>
-      <div id="txtDeleteProductMessage" class="message succes">
-        <p>Product deleted</p>
-      </div>
       <div class="products-filters u_mb-xl">
         <p id="txtVisibleProductStatus"></p>
         <div class="dropdown">
@@ -113,14 +107,6 @@ if ( isset($sUser) ) {
   <div class="page" data-page-id="add-product">
     <div class="container small">
       <h2>Add product</h2>
-      <!-- Message: Succesfully added product -->
-      <div id="txtAddProductMessage" class="message succes">
-      <p>New product added</p>
-      </div>
-      <!-- Message: Cant add product - missing fields -->
-      <div id="msgAddProductMissingFields" class="message error">
-        <p>Please fill out all the required fields to add the product.</p>
-      </div>
       <form id="frmAddProduct">
         <label for="txtProductName">Name</label>
         <input type="text" name="txtProductName" placeholder="Enter product name here" class="required">
@@ -171,10 +157,7 @@ if ( isset($sUser) ) {
     <div class="page" data-page-id="manage-users">
       <div class="container small">
         <h2>Manage users</h2>
-        <div id="txtDeleteUserMessage" class="message succes">
-          <p>User was deleted</p>
-        </div>
-        
+
         <div id="usersContainer">
           <!-- Users will be inserted here -->
         </div>
@@ -200,9 +183,6 @@ if ( isset($sUser) ) {
   <div class="page" data-page-id="login">
     <div class="container small">
       <h2>Sign in</h2>
-      <div id="txtLoginStatus" class="message error">
-        <p>Could not login. Check your info again.</p>
-      </div>
       <form id="frmLogIn">
         <label for="txtMailOrPhone">Email or phone number:</label>
         <input type="text" name="txtMailOrPhone" placeholder="Enter your email adress or phone number">
@@ -218,12 +198,6 @@ if ( isset($sUser) ) {
   <div class="page" data-page-id="add-user">
     <div class="container small">
       <h2>Sign up</h2>
-      <div id="msgAddUserMissingFields" class="message error">
-        <p>Please fill out all the required fields to sign up.</p>
-      </div>
-      <div id="msgAddUserPhoneOrEmailTaken" class="message error">
-        <p>Email or phone is already taken. Perhaps you forgot your login-informations?</p>
-      </div>
       <form id="frmSignUp">
         <label for="txtFirstName">First Name</label>
         <input type="text" name="txtFirstName" class="required">

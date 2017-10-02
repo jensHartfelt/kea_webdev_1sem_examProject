@@ -46,7 +46,11 @@ var page = {
       all: undefined
     },
     requests: [],
-    currentPage: undefined
+    currentPage: undefined,
+    sounds: {
+      notificationPositive: new Audio('sounds/notification-positive.mp3'),
+      notificationNegative: new Audio('sounds/notification-negative.mp3')
+    }
   },
 
 
@@ -222,7 +226,11 @@ var page = {
         page.getInterface();
         page.clearForm(frmLogIn);
       } else {
-        page.activateMessage(txtLoginStatus);
+        page.createNotification({
+          type: "negative",
+          icon: "error",
+          content: "Could not login. Check your info again."
+        })
       }
     }
   },
@@ -241,11 +249,19 @@ var page = {
             page.getInterface();
             page.clearForm(frmSignUp);
           } else if (res.status == "error") {
-            page.activateMessage(msgAddUserPhoneOrEmailTaken);
+            page.createNotification({
+              type: "negative",
+              icon: "error",
+              content: "Email or phone is already taken. Perhaps you forgot your login-informations?"
+            })
           }
         }
       } else {
-        page.activateMessage(msgAddUserMissingFields);
+        page.createNotification({
+          type: "negative",
+          icon: "error",
+          content: "Please fill out all the required fields to sign up."
+        })
       }
     });
   },
@@ -277,7 +293,11 @@ var page = {
       } else {
         page.data.currentUser = res.user;
       }
-      page.activateMessage(txtEditUserMessage);
+      page.createNotification({
+        type: "positive",
+        icon: "check",
+        content: "Your changes were saved"
+      });
       page.getInterface();
     }
   },
@@ -324,6 +344,11 @@ var page = {
     });
     function handleResponse(res) {
       page.data.currentUser = undefined;
+      page.createNotification({
+        type: "neutral",
+        icon: "delete",
+        content: "User succesfully deleted."
+      })
       page.getInterface();
     }
   },
@@ -398,6 +423,11 @@ var page = {
           data: frmData,
           callback: function() {
             currentElementContainer.classList.add("deleted");
+            page.createNotification({
+              type: "neutral",
+              icon: "delete",
+              content: "User succesfully deleted."
+            });
           }
         });
       });
@@ -426,13 +456,21 @@ var page = {
           url: "api/add-product.php",
           form: frmAddProduct,
           callback: function() {
-            page.activateMessage(txtAddProductMessage);
+            page.createNotification({
+              type: "positive",
+              icon: "check",
+              content: "Your product were added"
+            });
             page.getProducts();
             page.clearForm(frmAddProduct);
           }
         });
       } else {
-        page.activateMessage(msgAddProductMissingFields)
+        page.createNotification({
+          type: "negative",
+          icon: "error",
+          content: "Please fill out all the required fields to add the product."
+        })
       }
     })
   },
@@ -455,7 +493,11 @@ var page = {
       callback: function(res) {
         page.getProducts();
         page.goTo("view-products");
-        page.activateMessage(txtDeleteProductMessage);
+        page.createNotification({
+          type: "neutral",
+          icon: "delete",
+          content: "Product deleted"
+        })
       }
     });
   },
@@ -667,6 +709,11 @@ var page = {
       page.renderProducts();
       page.updateCartIndicator();
       page.renderCart();
+      page.createNotification({
+        type: "neutral",
+        icon: "add_shopping_cart",
+        content: "Product added to cart"
+      })
     }
   },
   updateCartIndicator: function() {
@@ -730,6 +777,11 @@ var page = {
     page.data.cart.splice( iCartDeleteIndex, 1 );
     page.renderCart();
     page.renderProducts();
+    page.createNotification({
+      type: "neutral",
+      icon: "shopping_cart",
+      content: "Product removed from cart"
+    });
   },
   isProductSoldOut: function(productId) {
     // Get amount of product with 'productId' in cart
@@ -756,10 +808,14 @@ var page = {
     }
   },
   buyProducts: function() {
-    console.log("buyProducts()");
     var frmCartProducts = new FormData();
     var sCartProducts = JSON.stringify(page.data.cart);
     frmCartProducts.append("cartProducts", sCartProducts);
+    page.createNotification({
+      type: "positive",
+      icon: "check",
+      content: "Succesfully bought "+page.data.cart.length+" products."
+    });
 
     page._request({
       type: "POST",
@@ -768,7 +824,6 @@ var page = {
       callback: handleResponse
     })
     function handleResponse(res) {
-      console.log("buy-products.php: ", res);
       page.data.cart = [];
       page.renderCart();
       page.getProducts();
@@ -779,25 +834,102 @@ var page = {
   /**********************
    NOTIFICATIONS
   **********************/
-  createNotification: function() {
-    
+  createNotification: function(options) {
+    /**
+     * DOCS:
+     * Name        Type      Example
+     * --------------------------------------------
+     * options     <object>  
+     * -> type     <string>  "negative", "positive" or "neutral"
+     * -> icon     <string>  "check" - any material-icons icon
+     * -> content  <string>  "Product deleted" - message to user
+     */
+
+    // Notification settings 
+    var iDuration = 2500;
+    var iAnimationDuration = 300;
+
+    // Close icon
+    var closeIcon = document.createElement("div");
+    closeIcon.classList.add("close-notification");
+    closeIcon.innerHTML = '<i class="material-icons">close</i>';
+    closeIcon.addEventListener("click", removeActiveClass);
+
+    // Notification itself
+    var notification = document.createElement("div");
+    notification.classList.add("notification", options.type)
+    notification.innerHTML = '\
+      <div class="icon">\
+        <i class="material-icons">'+options.icon+'</i>\
+      </div>\
+      <div class="content">\
+        <p>\
+          '+options.content+'\
+        </p>\
+      </div>';
+    notification.insertAdjacentElement("beforeend", closeIcon);
+
+    // Add notification to document
+    var body = document.getElementsByTagName("body")[0];
+    body.insertAdjacentElement("beforebegin", notification);
+
+    // Set timeout for removal of the notification
+    setTimeout( addActiveClass, 50);
+    setTimeout( removeActiveClass, iDuration);
+    setTimeout( removeNotification, iDuration + iAnimationDuration);
+    function addActiveClass() {
+      notification.classList.add("active");
+    }
+    function removeActiveClass() {
+      notification.classList.remove("active");
+    }
+    function removeNotification() {
+      notification.parentNode.removeChild(notification);
+    }
+
+    // Play sound
+    if (options.type == "positive" || options.type == "neutral") {
+      page.data.sounds.notificationPositive.play();
+    }
+    if (options.type == "negative") {
+      page.data.sounds.notificationNegative.play();
+    }
+
+    // Also use a desktop notification
+    notifyMe();
+    function notifyMe() {
+      // Let's check whether notification permissions have already been granted
+      if (Notification.permission === "granted") {
+        // If it's okay let's create a notification
+        displayNotification();
+      }
+
+      // Otherwise, we need to ask the user for permission
+      else if (Notification.permission !== 'denied') {
+        Notification.requestPermission(function (permission) {
+          // If the user accepts, let's create a notification
+          if (permission === "granted") {
+            displayNotification();
+          }
+        });
+      }
+
+      function displayNotification() {
+        var notification = new Notification(
+          options.content,
+        {
+          body: " ",
+          icon: " "
+        }
+        );
+      }
+    }
   },
 
 
   /**********************
    HELPERS / UTILITIES
   **********************/
-  activateMessage: function(id) {
-    var activeMessage = document.querySelectorAll(".message.active")
-    for (var i = 0; i < activeMessage.length; i++) {
-      activeMessage[i].classList.remove("active");
-    }
-
-    id.classList.add("active");
-    setTimeout(function(){
-      id.classList.remove("active");
-    },10000)
-  },
   activateSpinner: function() {
     spinner.classList.add("active");
   },

@@ -191,70 +191,60 @@ a.button.invisible:hover {
   border-color:#d9d9d9;
 }
 
-/* Messages */
-
-
-
-
-div.message {
-  max-height: 0px;
-  border-radius: 3px;
-  transform: translateY(20px);
-  transform-origin: center;
-  position: relative;
-  opacity: 0;
-  transition: transform 200ms ease, opacity 200ms ease;
+/* Notifications */
+div.notification {
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  top: 50px;
+  padding: 10px 45px;
+  z-index: 2;
+  font-size: 14px;
+  background-color: #4d4d4d;
+  color: #fff;
+  width: 100%;
+  box-shadow: 0 1px 5px 0px rgba(0,0,0,0.1);
+  transform: translateY(-100%);
+  transition: transform 260ms ease;
 }
-div.message.active {
-  transform: translateY(0px);
-  opacity: 0.9;
-  padding: 12px 12px 12px 46px;
-  margin: -12px 0 40px 0;
-  max-height: 100px;
-  transform: max-height 200ms ease;
+div.notification.active {
+  transform: translateY(0);
+  transition: transform 100ms ease;
+} 
+div.notification .icon {
+  width: 28px;
+  height: 28px;
+  margin-right: 12px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
-div.message.succes.active { 
-  transition: transform 200ms ease, opacity 200ms ease;
+div.notification.neutral .icon{
+  background-color: #1c7fe3;
 }
-div.message.error.active {
-  animation: attention 600ms ease;
-  /* transition: transform 200ms ease, opacity 200ms ease; */
+div.notification.negative .icon{
+  background-color: #d74c42;
 }
-@keyframes attention {
-  0% {transform: translateX(10px)}  
-  20% {transform: translateX(-10px)}
-  40% {transform: translateX(10px)}
-  60% {transform: translateX(-10px)}
-  80% {transform: translateX(10px)}
-  100% {transform: translateX(0px)}
+div.notification.positive .icon{
+  background-color: #258e48;
 }
-div.message.error {
-  border: 1px #f5bdc1 solid;
-  color: #d74c42;
-  background-color: #fbf4f5;
-}
-div.message.succes {
-  color: #258e48;
-  border: 1px #42bd6b solid;
-  background-color: #f5faf6;
-}
-div.message:before {
-  font-family: 'Material Icons';
-  position: absolute;
-  left: 12px;
-  top: 10px;
-  font-size: 28px;
-  display: block;
+div.notification i {
+  font-size: 20px;
+  line-height: 28px;
   text-align: center;
-  line-height: 20px;
+  width: 28px;
 }
-div.message.error:before {
-  color: #ea7b83;
-  content: "\E001";
+div.notification .content p {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
-div.message.succes:before {
-  color: #42bd6b;
-  content: "\E86C";
+div.notification .close-notification {
+  position: absolute;
+  right: 10px;
+}
+div.notification .close-notification i {
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  cursor: pointer;
 }
 
 /* Top bar */
