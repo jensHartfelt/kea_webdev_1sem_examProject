@@ -13,6 +13,7 @@ $sEditProductId = $_POST['txtProductId'];
 // Get the new name and price and files
 $sNewName = $_POST['txtProductName'];
 $sNewPrice = $_POST['txtProductPrice'];
+$sNewQuantity = $_POST['txtProductQuantity'];
 if ( isset($_FILES['fileProductPicture']['name']) ) {
   $sFileExtension = pathinfo($_FILES['fileProductPicture']['name'], PATHINFO_EXTENSION);
   $sFolder = '../images/product-pictures/';
@@ -26,6 +27,7 @@ for ($i = 0; $i < count($aProducts); $i++) {
   if ($aProducts[$i]->id == $sEditProductId) {
     $aProducts[$i]->name = $sNewName;
     $aProducts[$i]->price = $sNewPrice;
+    $aProducts[$i]->quantity = $sNewQuantity;
     if ( !empty($sFileExtension) ) {
       $aProducts[$i]->picture = $sFileName;
     }

@@ -26,10 +26,17 @@ if ( isset($sUser) ) {
     </div>
   </div>
   
+  <!-- Cart -->
   <div class="page" data-page-id="shopping-cart">
     <div class="container small">
       <h2>Shopping cart</h2>
-      <a id="" class="button positive">Buy<i class="material-icons">arrow_forward</i></a>
+      <div class="cart-container" id="cartContainer">
+        <!-- Products in the cart will be rendered here -->
+      </div>
+      <div class="cart-status">
+        <p id="txtCartStatus"></p>
+      </div>
+      <a id="btnBuyProducts" class="button positive u_mb-xxl">Purchase everything in cart<i class="material-icons">arrow_forward</i></a>
     </div>
   </div>
 
@@ -118,9 +125,12 @@ if ( isset($sUser) ) {
         <label for="txtProductName">Name</label>
         <input type="text" name="txtProductName" placeholder="Enter product name here" class="required">
 
-        <label for="txtProductPrice">Price</label>
+        <label for="txtProductPrice">Price in DKK</label>
         <input type="number" name="txtProductPrice" class="required">
 
+        <label for="txtProductQuantity">Quantity available</label>
+        <input type="number" name="txtProductQuantity" class="required">
+        
         <label for="fileProductPicture">Picture</label>
         <input type="file" name="fileProductPicture" class="u_mb-xl" accept="image/gif, image/jpeg, image/png">
 
@@ -137,17 +147,25 @@ if ( isset($sUser) ) {
       <form id="frmEditProduct">
         <label for="txtProductName">Name</label>
         <input type="text" name="txtProductName">
-        <label for="txtProductPrice">Price</label>
+
+        <label for="txtProductPrice">Price in DKK</label>
         <input type="number" name="txtProductPrice">
+
+        <label for="txtProductQuantity">Quantity available</label>
+        <input type="number" name="txtProductQuantity">
+
         <label for="fileProductPicture">Picture</label>
         <input type="file" name="fileProductPicture" class="u_mb-xl" accept="image/gif, image/jpeg, image/png">
+        
         <input type="text" name="txtProductId" class="u_hidden">
+        
         <a id="btnEditProduct" class="button positive">Save changes <i class="material-icons">save</i></a>
         <a id="btnDeleteProduct" class="button red">Delete <i class="material-icons">delete</i></a>
         <a class="button invisible page-link" data-go-to-page="view-products">Cancel<i class="material-icons">close</i></a>
       </form>
     </div>
   </div>';
+
   if ($jUser->role == "admin") {
     $jResponse->markup .= '
     <div class="page" data-page-id="manage-users">
@@ -230,6 +248,11 @@ if ( isset($sUser) ) {
           <option value="user">Standard</option>
           <option value="admin">Admin</option>
         </select>
+
+        <div class="checkbox">
+          <input type="checkbox" id="boolSubscribe" name="boolSubscribe">
+          <label for="boolSubscribe">Subscribe to out newsletter?</label>
+        </div>
 
         <a id="btnSignUp" class="button positive u_mb-xxl">Signup <i class="material-icons">arrow_forward</i></a>
         <a class="page-link button invisible" data-go-to-page="login"><i class="material-icons">arrow_back</i> Cancel</a>

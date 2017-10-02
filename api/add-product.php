@@ -19,6 +19,7 @@ $jProduct = json_decode("{}");
 $jProduct->id = uniqid();
 $jProduct->name = $_POST['txtProductName'];
 $jProduct->price = $_POST['txtProductPrice'];
+$jProduct->quantity = $_POST['txtProductQuantity'];
 if (!empty($sFileExtension)) {
   $jProduct->picture = $sFileName;
 } else {

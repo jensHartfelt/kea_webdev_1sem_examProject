@@ -15,7 +15,7 @@ if ( isset($sUser) ) {
   <a class="page-link" data-go-to-page="view-products"><i class="material-icons">view_quilt</i>Products</a>
   <a class="page-link" data-go-to-page="add-product"><i class="material-icons">add</i>Add product</a>
   '.$sManageUsers.'
-  <a class="page-link" data-go-to-page="shopping-cart"><i class="material-icons">shopping_cart</i>Cart</a>
+  <a class="page-link" data-go-to-page="shopping-cart"><i class="material-icons">shopping_cart</i>Cart <p class="cart-indicator">0</p> </a>
   <div class="seperator"></div>
   <div class="dropdown">
     <div class="title">
