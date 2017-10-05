@@ -66,7 +66,8 @@ var page = {
 
       // Vidw products
       viewProducts: undefined,
-      viewProductsMakers: []
+      viewProductsMarkers: [],
+      viewProductsActiveId: undefined
     }
   },
 
@@ -177,10 +178,10 @@ var page = {
     function waitForEls() {
       self.attachFormEvents(); // This function can be re-called if something changes and you need to re-assign events      
       self.updatePageNavigation();
+      self.initMaps();
       if (curUser) {
         self.renderCart();
         self.goTo("view-products");
-        self.initMaps();
         if (curUser.role == "admin") {
           self.getUsers();
         }
@@ -639,11 +640,21 @@ var page = {
         /****************************
              RENDERS PRODUCT TO MAP
         *****************************/     
-        page.createMarker({
+        // Create a marker for ech product
+        /* page.createMarker({
           map: page.data.maps.viewProducts,
           coords: products[i].location
+        }) */
+        var marker = new google.maps.Marker({
+          map: page.data.maps.viewProducts,
+          position: products[i].location,
+          productId: products[i].id
         })
+        page.data.maps.viewProductsMarkers.push(marker);
+        marker.addListener("click", page.updateProductInfoWindow)
 
+
+       /*  page.enableViewProductsInfoWindows(); */
       }
     } else {
       sProducts = "<p class='u-mlr-auto'>No products found...</p>";
@@ -661,6 +672,99 @@ var page = {
       callback();
     }
   },
+  renderProduct: function(options) {
+    /**
+     * options = {
+     *  id: "ad9238ads",
+     *  for: "infoWindow"
+     * } 
+     */
+
+    var products = page.data.products.all;
+    // Get product that matches the id
+    var currentProduct;
+    for (var i = 0; i < products.length; i++) {
+      if (products[i].id == options.id) {
+        currentProduct = products[i];
+      }
+    } 
+
+    var curUser = page.data.currentUser;
+    if (curUser.id == currentProduct.createdBy ||curUser.role == "admin") {
+      var sEditProduct = '<a class="edit-product btnEditProductLink">Edit</a>';
+    } else {
+      var sEditProduct = "";
+    }
+    // Toggle sold out or not sold out
+    if (page.isProductSoldOut(currentProduct.id)) {
+      var sBtnAddProductToCart = '<a class="button sold-out u_no-float">No more available<i class="material-icons">shopping_cart</i></a>';
+    } else {
+      var sBtnAddProductToCart = '<a class="button positive u_no-float btnAddProductToCart">Add to cart<i class="material-icons">add_shopping_cart</i></a>';
+    }
+    /* Dynamically update quantity based on how many is in the cart
+       The naming of the var iAmountOfProductInCart is intentionally not
+       amountOfProducts because it is amount of a single product
+    */
+    var iAmountOfProductInCart = 0;
+    for (var j = 0; j < page.data.cart.length; j++) {
+      if (page.data.cart[j].id == currentProduct.id) {
+        iAmountOfProductInCart++;
+      }
+    }
+    // Render product
+    var sProduct = '<div class="product info-window" data-product-id="'+currentProduct.id+'">\
+      '+sEditProduct+'\
+      <div class="image" style="background-image: url(images/product-pictures/'+currentProduct.picture+')"></div>\
+        <div class="product-details">\
+          <div>\
+            <p class="title">'+currentProduct.name+'</p>\
+            <p class="price">'+currentProduct.price+' DKK</p>\
+            <p class="quantity">'+(currentProduct.quantity - iAmountOfProductInCart)+' for sale</p>\
+          </div>\
+          '+sBtnAddProductToCart+'\
+        </div>\
+      </div>\
+    </div>';
+
+
+    return sProduct;
+  },
+  updateProductInfoWindow: function(e, options) {
+    /**
+     * NOTE:
+     * This function got a little messy. Basically it's called in two
+     * very different scenarios:
+     * 1) Called be a marker "click"-event
+     * 2) Called when adding products to cart with no event
+     * 
+     * Basically it will only attach eventlisteners and open if it's called
+     * by a click. If it's called "manually" it will only update the content
+     * of the window.
+     */
+
+    if (typeof e === "undefined"){
+      var renderOptions = {
+        id: options.id,
+        for: "infoWindow"
+      }
+    } else {
+      var renderOptions = {
+        id: this.productId,
+        for: "infoWindow"
+      }
+    }
+    page.data.maps.viewProductsInfoWindow.setContent( page.renderProduct(renderOptions) );
+
+    if (typeof e !== "undefined") {
+      page.data.maps.viewProductsInfoWindow.open(
+        page.data.maps.viewProducts,
+        this
+      );
+      page.updateEditProductLinks();
+      page.updateAddToCartLinks();
+    }
+  },
+
   updateEditProductLinks: function() {
     /**
       * The edit-lnks that are dynamically placed on the products if a 
@@ -674,8 +778,10 @@ var page = {
         page.updateEditProductForm(productId);
       }
     });
+    
   },
   updateAddToCartLinks: function() {
+    console.log("updateAddToCartLinks")
     page._addEvents({
       elementList: document.querySelectorAll(".btnAddProductToCart"),
       callback: function(e) {
@@ -823,6 +929,7 @@ var page = {
       page.data.cart.push(res);
 
       // Update relevant UI
+      page.updateProductInfoWindow(undefined, {id: productId});
       page.renderProducts();
       page.updateCartIndicator();
       page.renderCart();
@@ -1313,6 +1420,10 @@ var page = {
       zoom: 7,
       center: {lat: 55.793398, lng:10.903758}
     });
+    page.data.maps.viewProductsInfoWindow = new google.maps.InfoWindow({
+      content: "Im a info window",
+      maxWidth: 200
+    });
     /* page.data.maps.editProduct.addListener("click", function(e) {
       page.placeMarker({
         e: e,
@@ -1321,29 +1432,6 @@ var page = {
         mode: "event"
       })
     }) */
-  },
-  createMarker: function(options) {
-    /**
-     * DOCS:
-     * Creat a new marker and places it on a map. The function returns
-     * the newly placed marker so this can be tracked in an array or
-     * what makes sense
-     *  
-     * Arguments:
-     * -----------
-     * options = {
-     *   map: page.data.maps.viewProducts,
-     *   coords: {
-     *     lat: 213213
-     *     lng: 213123
-     *   }
-     * }
-     */
-    var marker = new google.maps.Marker({
-      map: options.map,
-      position: options.coords
-    })
-    return marker;
   },
   placeMarker: function(options ) {
     

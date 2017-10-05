@@ -472,6 +472,10 @@ a[data-go-to-page="shopping-cart"] {
 
 
 
+
+
+
+
 /* Products */
 /* Toggle states between map and products */
 [data-page-id="view-products"].view-mode-grid .products-container{
@@ -568,6 +572,43 @@ a[data-go-to-page="shopping-cart"] {
   line-height: 50px;
   content: "\E8B6";
 }
+
+/* Google maps product*/ 
+.product.info-window {
+  border-width: 0px;
+  padding: 0px;
+  margin: 0px;
+  box-shadow: 0px 0px 0px 0px rgba(0,0,0,0);
+  width: 200px;
+  min-height: 300px;
+}
+.product.info-window div.image {
+  max-height: 120px; 
+  width: 100%;
+  margin: 25px 0 10px 0;
+}
+.product.info-window a.edit-product {
+  border-radius: 0 0 20px 0px;
+  top: 25px;
+  left: 0px;
+  right: auto;
+  opacity: 0.6;
+  transform: translateY(0px)
+}
+.product.info-window a.edit-product:hover {
+  opacity: 1;
+}
+/* Google maps overwrites*/
+.gm-style .gm-style-iw {
+  left: 25px !important;
+  top: 0px !important;
+  bottom: 0px !important;
+  width: 200px !important;
+  min-height: 300px;
+
+}
+
+/* Grid product */
 .product {
   border: 1px #e6e6e6 solid;
   background-color: #fff; 
@@ -582,6 +623,7 @@ a[data-go-to-page="shopping-cart"] {
   position: relative;
   overflow: hidden;
 }
+
 .product a.edit-product {
   box-shadow: 0 1px 10px -2.3px rgba(0,0,0,0.4);  
   color: #fff;
@@ -656,6 +698,11 @@ a[data-go-to-page="shopping-cart"] {
   border: 1px #e6e6e6 solid;
   border-width: 0 0 1px 0;
 }
+
+
+
+
+
 
 /* Users */
 .user {
