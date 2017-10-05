@@ -1,5 +1,5 @@
 <?php
-//include_once('inc_check-login.php');
+include_once('inc_check-login.php');
 
 // Get products from cart
 $sCartProducts = $_POST['cartProducts'];

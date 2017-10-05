@@ -169,7 +169,7 @@ var page = {
       self.getMenu(waitForMenu);
       if (curUser) {
         self.getProducts();
-        self._loadStateFromLocalStorage();
+        /* self._loadStateFromLocalStorage(); */
       }
     }
     function waitForMenu() {
@@ -258,6 +258,11 @@ var page = {
     function handleResponse(res) {
       if (res.login == "ok") {
         page.data.currentUser = res.user;
+        if (res.user.cart) {
+          page.data.cart = res.user.cart;
+        } else {
+          res.user.cart = [];
+        }
         page.getInterface();
         page.clearForm(frmLogIn);
       } else {
@@ -308,6 +313,7 @@ var page = {
     });
     function handleResponse() {
       page.data.currentUser = undefined;
+      page.data.cart = [];
       page.getInterface();
     }
   },
@@ -473,7 +479,12 @@ var page = {
       type: "GET",
       url: "api/is-user-signed-in.php",
       callback: function(res) {
-        page.data.currentUser = res.user;
+        if (res.signedIn) {
+          page.data.currentUser = res.user;
+          if (res.user.cart) {
+            page.data.cart = res.user.cart;
+          }
+        } 
         page.getInterface();
       },
     });
@@ -764,7 +775,6 @@ var page = {
       page.updateAddToCartLinks();
     }
   },
-
   updateEditProductLinks: function() {
     /**
       * The edit-lnks that are dynamically placed on the products if a 
@@ -781,7 +791,6 @@ var page = {
     
   },
   updateAddToCartLinks: function() {
-    console.log("updateAddToCartLinks")
     page._addEvents({
       elementList: document.querySelectorAll(".btnAddProductToCart"),
       callback: function(e) {
@@ -933,6 +942,7 @@ var page = {
       page.renderProducts();
       page.updateCartIndicator();
       page.renderCart();
+      page.saveCart();
       page.createNotification({
         type: "neutral",
         icon: "add_shopping_cart",
@@ -986,7 +996,7 @@ var page = {
     txtCartStatus.innerText = "Total: "+totalPrice+" DKK";
     page.updateCartIndicator();
     page.updateRemoveFromCartButtons();
-    page._saveStateToLocalStorage();
+    /* page._saveStateToLocalStorage(); */
   },
   updateRemoveFromCartButtons: function() {
     page._addEvents({
@@ -1001,6 +1011,7 @@ var page = {
     page.data.cart.splice( iCartDeleteIndex, 1 );
     page.renderCart();
     page.renderProducts();
+    page.saveCart();
     page.createNotification({
       type: "neutral",
       icon: "shopping_cart",
@@ -1051,6 +1062,25 @@ var page = {
       page.data.cart = [];
       page.renderCart();
       page.getProducts();
+    }
+  },
+  saveCart: function() {
+    var frmCartProducts = new FormData();
+    var sCartProducts = JSON.stringify(page.data.cart);
+    frmCartProducts.append("cartProducts", sCartProducts);
+
+    page._request({
+      type: "POST",
+      data: frmCartProducts,
+      url: "api/save-cart.php",
+      callback: handleResponse
+    })
+    function handleResponse(res) {
+      page.createNotification({
+        type: "positive",
+        icon: "check",
+        content: "Saved products in cart"
+      });
     }
   },
 
@@ -1189,6 +1219,8 @@ var page = {
         var response = JSON.parse(this.response);
         options.callback(response);
 
+        console.log(response);
+
         // If there are no active request, deactivate spinner
         if (page.data.requests.length == 0) {
           page.deactivateSpinner();
@@ -1234,22 +1266,6 @@ var page = {
     for (var i = 0; i < options.elementList.length; i++) {
       options.elementList[i].addEventListener(options.eventType, options.callback, true)
     }
-  },
-  _saveStateToLocalStorage: function() {
-    /**
-     * Saves cart and products.soldOut to localstorage
-     * 
-     */
-    var webShopState = {
-      cart: page.data.cart
-    }
-    webShopState = JSON.stringify(webShopState);
-    localStorage.setItem('webShopState', webShopState);
-  },
-  _loadStateFromLocalStorage: function() {
-    var webShopState = localStorage.getItem('webShopState');
-    webShopState = JSON.parse(webShopState);
-    page.data.cart = webShopState.cart;
   },
   _getUserLocation: function(callback) {
     var options = {

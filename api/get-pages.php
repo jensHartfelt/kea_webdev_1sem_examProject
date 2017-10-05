@@ -77,7 +77,7 @@ if ( isset($sUser) ) {
   </div>
   
   <!-- Products -->
-  <div class="page view-mode-map" data-page-id="view-products">
+  <div class="page view-mode-grid" data-page-id="view-products">
     <div class="container big">
       <h2>Products</h2>
       <div class="products-filters u_mb-xl">
