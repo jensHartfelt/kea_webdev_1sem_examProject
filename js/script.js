@@ -38,10 +38,12 @@ var page = {
     products: {
       visible: undefined, // <- will be set when filtering products
       all: undefined, // <- will be set after request
-      sorting: "none" // <- Can be "ascending", "descending" and "none". Used when rendering products
+      sorting: "none", // <- Can be "ascending", "descending" and "none". Used when rendering products
+      viewMode: "grid" // <- can be "grid" and "map"
     },
     cart: [], // <- Products will be inserted here dynamically
     currentUser: undefined, // <- will be set after request
+    currentUserPos: undefined,
     users: {
       all: undefined
     },
@@ -50,6 +52,21 @@ var page = {
     sounds: {
       notificationPositive: new Audio('sounds/notification-positive.mp3'),
       notificationNegative: new Audio('sounds/notification-negative.mp3')
+    },
+    maps: {
+      // Add 
+      addProduct: undefined,
+      addProductMarker: undefined,
+      addProductMarkerPos: "yada",
+
+      // Edit
+      editProduct: undefined,
+      editProductMarker: undefined,
+      editProductMarkerPos: "yada",
+
+      // Vidw products
+      viewProducts: undefined,
+      viewProductsMakers: []
     }
   },
 
@@ -58,7 +75,6 @@ var page = {
    NAVIGATION AND INTERFACE
   *************************/
   goTo: function(pageId) {
-    // console.log("goTo('"+pageId+"')");
     this.hideAllPages();
     var newPage = document.querySelector('[data-page-id="'+pageId+'"]');
     newPage.classList.add("active");
@@ -74,11 +90,21 @@ var page = {
     for (var i = 0; i < pageLinks.length; i++) {
       pageLinks[i].addEventListener("click", function() {
         var pageLinkId = this.getAttribute("data-go-to-page");
+        var activePageLinks = document.querySelectorAll(".page-link.active")
+        removeAllActiveClasses(activePageLinks);
+        this.classList.add("active");
+
         if (pageLinkId == "edit-user") {
           self.updateEditUserPage();
         }
         self.goTo(pageLinkId);
       });
+    }
+
+    function removeAllActiveClasses(list) {
+      for (var i = 0; i < list.length; i++) {
+        list[i].classList.remove("active");
+      }
     }
   },
   getPages: function(callback) {
@@ -154,6 +180,7 @@ var page = {
       if (curUser) {
         self.renderCart();
         self.goTo("view-products");
+        self.initMaps();
         if (curUser.role == "admin") {
           self.getUsers();
         }
@@ -178,7 +205,8 @@ var page = {
      * of every button before assigining events i make
      * sure to not break the script if a button is missing
      * (which will happen with buttons that are dynamically
-     * inserted). An alternative would be to break up fun
+     * inserted). Maybe do a try ... catch ? I guess this would
+     * also break the page if i.e. the first button is missing
      */
     if (typeof btnSignUp !== "undefined") {
       btnSignUp.addEventListener("click", this.signUp);
@@ -207,8 +235,14 @@ var page = {
     if (typeof btnBuyProducts !== "undefined") {
       btnBuyProducts.addEventListener("click", this.buyProducts);
     }
+    if (typeof btnUseCurrentLocationAdd !== "undefined") {
+      btnUseCurrentLocationAdd.addEventListener("click", page.handleGettingOfUserLocation);
+    }
+    if (typeof btnUseCurrentLocationEdit !== "undefined") {
+      btnUseCurrentLocationEdit.addEventListener("click", page.handleGettingOfUserLocation);
+    }   
   },
-
+  
 
   /**********************
    USERS
@@ -450,12 +484,23 @@ var page = {
   **********************/
   addProduct: function() {
     page.checkForm(frmAddProduct, function(status) {
-      if (status == "ok") {
+      /* 
+        Checks if the radio-buttons for "use current location" is checked. If it is, it will
+        use whatever position is stored in page.data.currentUserPos. If it is not it will use
+        the location of the marker on the map and output an error if no marker is placed 
+      */
+      var sProductLocation = useCurrentLocationAdd.checked ? page.data.currentUserPos : page.data.maps.addProductMarkerPos;
+      sProductLocation = JSON.stringify(sProductLocation);
+
+      if (status == "ok" && sProductLocation) {
+        var frmDataAddProduct = new FormData(frmAddProduct);
+        frmDataAddProduct.append("location", sProductLocation);
+
         page._request({
           type: "POST",
           url: "api/add-product.php",
-          form: frmAddProduct,
-          callback: function() {
+          data: frmDataAddProduct,
+          callback: function(res) {
             page.createNotification({
               type: "positive",
               icon: "check",
@@ -465,23 +510,40 @@ var page = {
             page.clearForm(frmAddProduct);
           }
         });
-      } else {
+      } else if (status != "ok" && !sProductLocation){
         page.createNotification({
           type: "negative",
           icon: "error",
           content: "Please fill out all the required fields to add the product."
         })
+      } else if (status == "ok" && !sProductLocation) {
+        page.createNotification({
+          type: "negative",
+          icon: "error",
+          content: "Please choose a location"
+        })
       }
     })
   },
   editProduct: function() {
+    var sProductLocation = useCurrentLocationEdit.checked ? page.data.currentUserPos : page.data.maps.editProductMarkerPos;
+    sProductLocation = JSON.stringify(sProductLocation);
+
+    var frmDataEditProduct = new FormData(frmEditProduct);
+    frmDataEditProduct.append("location", sProductLocation);
+
     page._request({
       type: "POST",
       url: "api/edit-product.php",
-      form: frmEditProduct,
+      data: frmDataEditProduct,
       callback: function(res) {
         page.getProducts();
         page.goTo("view-products");
+        page.createNotification({
+          type: "positive",
+          icon: "check",
+          content: "Your shanges were saved"
+        })
       }
     });
   },
@@ -508,10 +570,11 @@ var page = {
       callback: function(products) {
         page.data.products.all = products;
         page.data.products.visible = products;
-        page.renderProducts( initFiltersAndSorting );
-        function initFiltersAndSorting() {
+        page.renderProducts( initFiltersSortingAndViews );
+        function initFiltersSortingAndViews() {
           page.enableProductFiltering();
           page.enableProductSorting();
+          page.enableProductViews();
         }
       }
     });
@@ -530,8 +593,10 @@ var page = {
     if (products.length) {  
       for (var i = 0; i < products.length; i++) {
         
-        // Toggle features based on state
 
+        /*****************************
+             RENDERS PRODUCT TO GRID
+        *****************************/        
         // Toggle rendering of edit-buttons
         var curUser = page.data.currentUser;
         if (curUser.id == products[i].createdBy ||curUser.role == "admin") {
@@ -555,7 +620,6 @@ var page = {
             iAmountOfProductInCart++;
           }
         }
-      
         // Render product
         var sProduct = '<div class="product" data-product-id="'+products[i].id+'">\
           '+sEditProduct+'\
@@ -571,6 +635,15 @@ var page = {
           </div>\
         </div>';
         sProducts += sProduct;
+
+        /****************************
+             RENDERS PRODUCT TO MAP
+        *****************************/     
+        page.createMarker({
+          map: page.data.maps.viewProducts,
+          coords: products[i].location
+        })
+
       }
     } else {
       sProducts = "<p class='u-mlr-auto'>No products found...</p>";
@@ -614,12 +687,10 @@ var page = {
   },
   updateEditProductForm: function(productId) {
     /* 
-      This should be refactored. Since all the needed data already exists inside
-      the products array there is really no need for fetching the product.
-      On the other hand, if a product were to have more data that could be edited
-      than what is displayed this makes sense
+      if a product were to have more data that could be edited
+      than what is displayed in the overview this makes sense,
+      else it's a request that could be omitted.
     */
-
 
     page.activateSpinner();
     page._request({
@@ -638,10 +709,41 @@ var page = {
       elId.value = res.id;
       elQuantity.value = res.quantity;
 
+      page.data.maps.editProduct.setCenter(res.location);
+      page.data.maps.editProduct.setZoom(8);
+      page.placeMarker({
+        marker: page.data.maps.editProductMarker,
+        positionObject: "editProductMarkerPos",
+        coords: res.location,
+        mode: "manual"
+      })
+
       // Change navigation and disable spinner
       page.goTo("edit-product");
       page.deactivateSpinner();
       page.attachFormEvents();
+    }
+  },
+  handleGettingOfUserLocation: function() {
+    var type = this.getAttribute("data-type");
+    var currentRadio = document.querySelector('.radio[data-type="'+type+'"] input');
+    if (type == "edit") {
+      btnUseCurrentLocationEdit.removeEventListener("click", page.handleGettingOfUserLocation);
+    } else if (type == "add") {
+      btnUseCurrentLocationAdd.removeEventListener("click", page.handleGettingOfUserLocation);
+    }
+    page._getUserLocation(handlePosition);
+    function handlePosition(pos, status) {
+      if (status == "ok") {
+        console.log("handlePosition OK")
+        currentRadio.checked = true;
+        page.data.currentUserPos = pos;
+      } else {
+        console.log("handlePosition error")
+        currentRadio.checked = false;
+        btnUseCurrentLocationAdd.addEventListener("click", page.handleGettingOfUserLocation);
+        btnUseCurrentLocationEdit.addEventListener("click", page.handleGettingOfUserLocation);
+      }
     }
   },
   enableProductFiltering: function() {
@@ -688,6 +790,21 @@ var page = {
       }
     });
     return arrayToSort;
+  },
+  enableProductViews: function() {
+    var viewProductsPage = document.querySelector('[data-page-id="view-products"]');
+    btnShowAsGrid.addEventListener("click", function(e) {
+      viewProductsPage.classList.remove("view-mode-map")
+      viewProductsPage.classList.add("view-mode-grid")
+      btnShowAsGrid.classList.add("selected")
+      btnShowAsMap.classList.remove("selected")
+    })
+    btnShowAsMap.addEventListener("click", function(e) {
+      viewProductsPage.classList.add("view-mode-map")
+      viewProductsPage.classList.remove("view-mode-grid")
+      btnShowAsGrid.classList.remove("selected")
+      btnShowAsMap.classList.add("selected")
+    })
   },
 
 
@@ -840,13 +957,14 @@ var page = {
      * Name        Type      Example
      * --------------------------------------------
      * options     <object>  
-     * -> type     <string>  "negative", "positive" or "neutral"
+     * -> type     <string>  "negative", "positive", "neutral"
      * -> icon     <string>  "check" - any material-icons icon
      * -> content  <string>  "Product deleted" - message to user
+     * -> desktopNotification  <bool>    true, false
      */
 
     // Notification settings 
-    var iDuration = 2500;
+    var iDuration = 6500;
     var iAnimationDuration = 300;
 
     // Close icon
@@ -896,7 +1014,9 @@ var page = {
     }
 
     // Also use a desktop notification
-    notifyMe();
+    if (options.desktopNotification) {
+      notifyMe();
+    }
     function notifyMe() {
       // Let's check whether notification permissions have already been granted
       if (Notification.permission === "granted") {
@@ -1005,7 +1125,7 @@ var page = {
     }
 
     for (var i = 0; i < options.elementList.length; i++) {
-      options.elementList[i].addEventListener(options.eventType, options.callback)
+      options.elementList[i].addEventListener(options.eventType, options.callback, true)
     }
   },
   _saveStateToLocalStorage: function() {
@@ -1024,6 +1144,50 @@ var page = {
     webShopState = JSON.parse(webShopState);
     page.data.cart = webShopState.cart;
   },
+  _getUserLocation: function(callback) {
+    var options = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
+    };
+    // If there isn't already a position in the system, go ahead and get it
+    if (!page.data.currentUserPos) {
+      console.log("Userpos doesnt exsts. Getting it")      
+      page.activateSpinner();
+      navigator.geolocation.getCurrentPosition(succes, error, options);
+      function succes(pos) {
+        page.createNotification({
+          type: "positive",
+          icon: "location_on",
+          content: "Yay. Succesfully obtained your location"
+        })
+        var position = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        }
+        var status = "ok";
+        callback(position, status);
+        page.deactivateSpinner();
+      }
+      function error() {
+        page.createNotification({
+          type: "negative",
+          icon: "error",
+          content: "Couldn't get your location. Manually choose your location instead"
+        })
+        page.deactivateSpinner();
+        status = "error";
+        callback(false, status);
+      }
+    } else {
+      // Already obtained user position. I'm assuming it hasn't changed.
+      // A million-dollar solution would silently check if the position
+      // is somewhat similar to the one in memory and only change it if
+      // it isn't.
+      var status = "ok";
+      callback(page.data.currentUserPos, status)
+    }
+  },
   checkForm: function(form, callback) {
     var errors = 0;
     for (var i = 0; i < form.children.length; i++) {
@@ -1031,6 +1195,21 @@ var page = {
       /* 
         Loop through all children of the form
         To all children of type input or select (Add more if needed)
+        -> Since adding this function i've come across some edge-cases
+        where this isn't enough. For-example when using form-elemnts
+        nested inside something. Only top level children are checked
+        and doing a nested loop for each elements children seems
+        a little overkill. Maybe i should add a data-attribute that
+        notifies this function that this element either needs to be 
+        checked or contains children that needs to be checked..
+        like data-form-check="this" and data-form-check="children":
+
+        <input data-form-check="this">
+        <div data-form-check="children">
+          <label>Yada</label>
+          <textarea data-form-check="this"></textarea>
+        </div>
+
       */
       if ( 
         (!curEl.value) &&
@@ -1072,6 +1251,147 @@ var page = {
     this.IsUserSignedIn();
     this.submitFormOnEnter();
   },
+
+
+  /**********************
+   MAPS
+  **********************/
+  initMaps: function() {
+    /* 
+      This function will only work if the maps-script have finished loading.
+      The function however is called as soon as a user is logged in an is 
+      requesting the interface. Therefor it will try to initMaps every 100ms
+      until it succeeds. In my experience this is one try.
+    */
+    try {
+      page.initAddProductMap();
+      page.initEditProductMap();
+      page.initViewProductsMap();
+    } catch (err) {
+      setTimeout(page.initMaps, 100);
+    }
+  },
+  initAddProductMap: function() {
+    // Add product map
+    page.data.maps.addProduct = new google.maps.Map(document.getElementById('addProductMapContainer'), {
+      zoom: 6,
+      center: {lat: 55.793398, lng:10.903758}
+    });
+    page.data.maps.addProductMarker = new google.maps.Marker({
+      map: page.data.maps.addProduct
+    });
+    page.data.maps.addProduct.addListener("click", function(e) {
+      page.placeMarker({
+        e: e,
+        marker: page.data.maps.addProductMarker,
+        positionObject: "addProductMarkerPos",
+        mode: "event"
+      })
+    });
+  },
+  initEditProductMap: function() {
+    // Add product map
+    page.data.maps.editProduct = new google.maps.Map(document.getElementById('editProductMapContainer'), {
+      zoom: 7,
+      center: {lat: 55.793398, lng:10.903758}
+    });
+    page.data.maps.editProductMarker = new google.maps.Marker({
+      map: page.data.maps.editProduct
+    });
+    page.data.maps.editProduct.addListener("click", function(e) {
+      page.placeMarker({
+        e: e,
+        marker: page.data.maps.editProductMarker,
+        positionObject: "editProductMarkerPos",        
+        mode: "event"
+      })
+    })
+  },
+  initViewProductsMap: function() {
+    // Add product map
+    page.data.maps.viewProducts = new google.maps.Map(document.getElementById('viewProductsMap'), {
+      zoom: 7,
+      center: {lat: 55.793398, lng:10.903758}
+    });
+    /* page.data.maps.editProduct.addListener("click", function(e) {
+      page.placeMarker({
+        e: e,
+        marker: page.data.maps.editProductMarker,
+        positionObject: "editProductMarkerPos",        
+        mode: "event"
+      })
+    }) */
+  },
+  createMarker: function(options) {
+    /**
+     * DOCS:
+     * Creat a new marker and places it on a map. The function returns
+     * the newly placed marker so this can be tracked in an array or
+     * what makes sense
+     *  
+     * Arguments:
+     * -----------
+     * options = {
+     *   map: page.data.maps.viewProducts,
+     *   coords: {
+     *     lat: 213213
+     *     lng: 213123
+     *   }
+     * }
+     */
+    var marker = new google.maps.Marker({
+      map: options.map,
+      position: options.coords
+    })
+    return marker;
+  },
+  placeMarker: function(options ) {
+    
+    /**
+     * MINI-DOCS:
+     * 
+     * <object>  options = {
+     * <event>     e: event,     
+     * <object>    marker: page.data.maps.editProductMarker,
+     * <string>    positionObject: "editProductMarkerPos",
+     * <string>    mode: "event" or "manual"
+     * <object>    coords: {
+     * <number>      lat: 123123,
+     * <number>      lng: 1239213
+     *             },
+     *           } 
+     */
+
+    // If manual coordinates are passed to the function use those
+    if (options.mode == "manual") {
+      var coords = {
+        lat: options.coords.lat,
+        lng: options.coords.lng
+      }
+    // Else assume that theres is a function giving coordinates
+    } else if (options.mode == "event") {
+      var coords = {
+        lat: options.e.latLng.lat(),
+        lng: options.e.latLng.lng()
+      }
+    } else {
+      throw("Error in 'placeMarker()'. Parameters doesn't match the expected");
+    }
+    options.marker.setPosition(coords);
+
+    /* 
+      I initially passed the object itself (page.data.maps.editProductMarkerPos)
+      but ran into a bug where i couldn't set the value. Im thinking this might
+      be because im passing a shallow copy of the objects data and not the acutal
+      object-reference, so im basically updating a copy of the original object.
+      I cant really make sense of it, so if you read this, i would appreciate some
+      feedback on why this wouldn't work if there is some obvious reason.
+      Now i basically just use the square-brackets-notation to select the oject
+      instead which works perfectly.
+    */
+    page.data.maps[options.positionObject] = coords;
+
+  }
 }
 page.init();
 /* })() */

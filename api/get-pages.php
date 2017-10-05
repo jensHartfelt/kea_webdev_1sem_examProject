@@ -77,11 +77,21 @@ if ( isset($sUser) ) {
   </div>
   
   <!-- Products -->
-  <div class="page" data-page-id="view-products">
+  <div class="page view-mode-grid" data-page-id="view-products">
     <div class="container big">
       <h2>Products</h2>
       <div class="products-filters u_mb-xl">
         <p id="txtVisibleProductStatus"></p>
+        <div class="dropdown">
+            <div class="title">
+              <p>Show as</p>
+              <i class="material-icons">arrow_drop_down</i>
+            </div>
+            <div class="content">
+              <a id="btnShowAsGrid" class="selected">Grid</a>
+              <a id="btnShowAsMap">Map</a>
+            </div>
+          </div>
         <div class="dropdown">
           <div class="title">
             <p>Order by</p>
@@ -97,6 +107,10 @@ if ( isset($sUser) ) {
         </div>
       </div>
 
+      <div class="products-map" id="viewProductsMap">
+        <p>Loading map...</p>
+        <!-- Map will be inserted here -->
+      </div>
       <div class="products-container" id="productContainer">
         <!-- Products will be dynamically inserted here -->
       </div>
@@ -108,7 +122,7 @@ if ( isset($sUser) ) {
     <div class="container small">
       <h2>Add product</h2>
       <form id="frmAddProduct">
-        <label for="txtProductName">Name</label>
+        <label for="txtProductName">Name of the product</label>
         <input type="text" name="txtProductName" placeholder="Enter product name here" class="required">
 
         <label for="txtProductPrice">Price in DKK</label>
@@ -116,11 +130,28 @@ if ( isset($sUser) ) {
 
         <label for="txtProductQuantity">Quantity available</label>
         <input type="number" name="txtProductQuantity" class="required">
-        
+
+        <label for="txtProductQuantity">Location - Where is the product?</label>
+
+        <!-- Use current location -->
+        <div class="radio" id="btnUseCurrentLocationAdd" data-type="add">
+          <input type="radio" name="chooseLocationOnMap" id="useCurrentLocationAdd">
+          <label for="useCurrentLocationAdd">Use current location</label>
+        </div>
+
+        <!-- Choose location on map -->
+        <div class="radio">  
+          <input type="radio" name="chooseLocationOnMap" id="useMapLocationAdd" checked>
+          <div id="addProductMapContainer" class="map-toggle" >
+            <p>Loading map...</p>
+          </div>
+          <label for="useMapLocationAdd">Choose location on map</label>
+        </div>
+
         <label for="fileProductPicture">Picture</label>
         <input type="file" name="fileProductPicture" class="u_mb-xl" accept="image/gif, image/jpeg, image/png">
 
-        <a id="btnAddProduct" class="button positive">Add product <i class="material-icons">add</i></a>
+        <a id="btnAddProduct" class="button positive u_mb-xxl">Add product <i class="material-icons">add</i></a>
         <a class="button invisible">Cancel<i class="material-icons">close</i></a>
       </form>
     </div>
@@ -143,9 +174,23 @@ if ( isset($sUser) ) {
         <label for="fileProductPicture">Picture</label>
         <input type="file" name="fileProductPicture" class="u_mb-xl" accept="image/gif, image/jpeg, image/png">
         
+        
+        <div class="radio" id="btnUseCurrentLocationEdit" data-type="edit">
+          <input type="radio" name="chooseLocationOnMapEdit" id="useCurrentLocationEdit" value="useCurrentLocationEdit">
+          <label for="useCurrentLocationEdit">Use current location</label>
+        </div>
+
+        <div class="radio">  
+          <input type="radio" name="chooseLocationOnMapEdit" id="useMapLocationEdit" value="useMapLocationEdit" checked>
+          <div id="editProductMapContainer" class="map-toggle" >
+            <p>Loading map...</p>
+          </div>
+          <label for="useMapLocationEdit">Choose location on map</label>
+        </div>
+
         <input type="text" name="txtProductId" class="u_hidden">
         
-        <a id="btnEditProduct" class="button positive">Save changes <i class="material-icons">save</i></a>
+        <a id="btnEditProduct" class="button positive u_mb-xxl">Save changes <i class="material-icons">save</i></a>
         <a id="btnDeleteProduct" class="button red">Delete <i class="material-icons">delete</i></a>
         <a class="button invisible page-link" data-go-to-page="view-products">Cancel<i class="material-icons">close</i></a>
       </form>

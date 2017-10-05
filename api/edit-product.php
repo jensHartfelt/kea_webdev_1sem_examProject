@@ -28,6 +28,8 @@ for ($i = 0; $i < count($aProducts); $i++) {
     $aProducts[$i]->name = $sNewName;
     $aProducts[$i]->price = $sNewPrice;
     $aProducts[$i]->quantity = $sNewQuantity;
+    $location = json_decode($_POST['location']);
+    $aProducts[$i]->location = $location;
     if ( !empty($sFileExtension) ) {
       $aProducts[$i]->picture = $sFileName;
     }

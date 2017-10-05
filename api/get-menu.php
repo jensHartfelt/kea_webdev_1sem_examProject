@@ -12,7 +12,7 @@ if ( isset($sUser) ) {
   }
 
   $jResponse->markup = '
-  <a class="page-link" data-go-to-page="view-products"><i class="material-icons">view_quilt</i>Products</a>
+  <a class="page-link active" data-go-to-page="view-products"><i class="material-icons">view_quilt</i>Products</a>
   <a class="page-link" data-go-to-page="add-product"><i class="material-icons">add</i>Add product</a>
   '.$sManageUsers.'
   <a class="page-link" data-go-to-page="shopping-cart"><i class="material-icons">shopping_cart</i>Cart <p class="cart-indicator">0</p> </a>

@@ -20,6 +20,8 @@ $jProduct->id = uniqid();
 $jProduct->name = $_POST['txtProductName'];
 $jProduct->price = $_POST['txtProductPrice'];
 $jProduct->quantity = $_POST['txtProductQuantity'];
+$location = json_decode($_POST['location']);
+$jProduct->location = $location;
 if (!empty($sFileExtension)) {
   $jProduct->picture = $sFileName;
 } else {
@@ -33,6 +35,8 @@ $aProducts = json_decode($sProducts);
 array_push($aProducts, $jProduct);
 $sProducts = json_encode($aProducts);
 file_put_contents('../data/products.txt', $sProducts);
+
+$sProduct = json_encode($jProduct);
 
 echo '{
   "message":"succes"
