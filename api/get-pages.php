@@ -270,7 +270,7 @@ if ( isset($sUser) ) {
 
         <div class="checkbox">
           <input type="checkbox" id="boolSubscribe" name="boolSubscribe">
-          <label for="boolSubscribe">Subscribe to out newsletter?</label>
+          <label for="boolSubscribe">Subscribe to our newsletter?</label>
         </div>
 
         <a id="btnSignUp" class="button positive u_mb-xxl">Signup <i class="material-icons">arrow_forward</i></a>

@@ -24,10 +24,6 @@ for ($i = 0; $i < count($aUsers); $i++) {
   }
 }
 
-
-
-
-
 $jNewUser = json_decode("{}");
 $jNewUser->id = uniqid();
 $jNewUser->role = $_POST['txtUserRole'];
@@ -36,6 +32,9 @@ $jNewUser->lastName = $_POST['txtLastName'];
 $jNewUser->password = $_POST['txtPassword']; // Are we suppose to encrypt this?
 $jNewUser->email = $_POST['txtEmail'];
 $jNewUser->phone = $_POST['txtPhone'];
+$jNewUser->subscribedToNewsletter = $_POST['boolSubscribe'] == 'on' ? true : false; 
+
+
 if (!empty($sFileExtension)) {
   $profilePicture = '"yes"';
   $jNewUser->profilePicture = $sFileName; 
@@ -44,10 +43,11 @@ if (!empty($sFileExtension)) {
   $profilePicture = '"no"';
 }
 // ^^^ The api doesn't tell the client where the 
-// immage is since the api doesn't know 
+// image is since the api doesn't always know 
 // where the image will be requested from.
 // Therefor only the name is saved, and the
-// client have to specify where the imagefolder is.
+// client have to specify where the imagefolder 
+// is relative to the client.
 
 array_push($aUsers, $jNewUser);
 $sUsers = json_encode($aUsers);

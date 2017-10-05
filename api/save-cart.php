@@ -1,5 +1,5 @@
 <?php
-//include_once('inc_check-login.php');
+include_once('inc_check-login.php');
 
 session_start();
 
@@ -32,7 +32,4 @@ $sUser = json_encode($jUser);
 $_SESSION['sUser'] = $sUser;
 
 echo '{"status": "ok"}';
-
-
-
 ?>

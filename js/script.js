@@ -169,7 +169,6 @@ var page = {
       self.getMenu(waitForMenu);
       if (curUser) {
         self.getProducts();
-        /* self._loadStateFromLocalStorage(); */
       }
     }
     function waitForMenu() {
@@ -188,9 +187,7 @@ var page = {
       } else {
         self.goTo("landing-page");
       }
-    } 
-
-
+    }
   },
   updateEls: function(callback) {
     this.els.masterContainer = document.querySelector("#master-container");
@@ -265,6 +262,12 @@ var page = {
         }
         page.getInterface();
         page.clearForm(frmLogIn);
+        page.createNotification({
+          type: "neutral",
+          icon: "tag_faces",
+          content: "Welcome back "+res.user.firstName+"!",
+          desktopNotification: true
+        })
       } else {
         page.createNotification({
           type: "negative",
@@ -315,7 +318,14 @@ var page = {
       page.data.currentUser = undefined;
       page.data.cart = [];
       page.getInterface();
+      page.createNotification({
+        type: "neutral",
+        icon: "face",
+        content: "See you soon",
+        desktopNotification: true
+      })
     }
+    
   },
   editUser: function(e) {
     var jUserData = new FormData(frmEditUser);
@@ -651,21 +661,22 @@ var page = {
         /****************************
              RENDERS PRODUCT TO MAP
         *****************************/     
-        // Create a marker for ech product
-        /* page.createMarker({
-          map: page.data.maps.viewProducts,
-          coords: products[i].location
-        }) */
-        var marker = new google.maps.Marker({
-          map: page.data.maps.viewProducts,
-          position: products[i].location,
-          productId: products[i].id
-        })
-        page.data.maps.viewProductsMarkers.push(marker);
-        marker.addListener("click", page.updateProductInfoWindow)
-
-
-       /*  page.enableViewProductsInfoWindows(); */
+        // Create a marker for each product
+        try {
+          var marker = new google.maps.Marker({
+            map: page.data.maps.viewProducts,
+            position: products[i].location,
+            productId: products[i].id
+          })
+          page.data.maps.viewProductsMarkers.push(marker);
+          marker.addListener("click", page.updateProductInfoWindow)
+        } catch(err) {
+          /* Google is not yet defined. For the sake of loading the page as quickly
+          as possible im not gonna wait for google maps to load before rendering the
+          products, so if google isn't ready yet that's fine. I re-render the products
+          when google maps finishes loading.
+          */
+        }
       }
     } else {
       sProducts = "<p class='u-mlr-auto'>No products found...</p>";
@@ -933,6 +944,7 @@ var page = {
       url: "api/get-product.php?productId="+productId,
       callback: handleResponse
     })
+
     function handleResponse(res) {
       // Add product to cart
       page.data.cart.push(res);
@@ -1049,7 +1061,8 @@ var page = {
     page.createNotification({
       type: "positive",
       icon: "check",
-      content: "Succesfully bought "+page.data.cart.length+" products."
+      content: "Succesfully bought "+page.data.cart.length+" products.",
+      desktopNotification: true
     });
 
     page._request({
@@ -1068,20 +1081,11 @@ var page = {
     var frmCartProducts = new FormData();
     var sCartProducts = JSON.stringify(page.data.cart);
     frmCartProducts.append("cartProducts", sCartProducts);
-
     page._request({
       type: "POST",
       data: frmCartProducts,
-      url: "api/save-cart.php",
-      callback: handleResponse
+      url: "api/save-cart.php"
     })
-    function handleResponse(res) {
-      page.createNotification({
-        type: "positive",
-        icon: "check",
-        content: "Saved products in cart"
-      });
-    }
   },
 
 
@@ -1101,7 +1105,7 @@ var page = {
      */
 
     // Notification settings 
-    var iDuration = 6500;
+    var iDuration = 5500;
     var iAnimationDuration = 300;
 
     // Close icon
@@ -1152,15 +1156,9 @@ var page = {
 
     // Also use a desktop notification
     if (options.desktopNotification) {
-      notifyMe();
-    }
-    function notifyMe() {
-      // Let's check whether notification permissions have already been granted
       if (Notification.permission === "granted") {
-        // If it's okay let's create a notification
         displayNotification();
       }
-
       // Otherwise, we need to ask the user for permission
       else if (Notification.permission !== 'denied') {
         Notification.requestPermission(function (permission) {
@@ -1172,13 +1170,7 @@ var page = {
       }
 
       function displayNotification() {
-        var notification = new Notification(
-          options.content,
-        {
-          body: " ",
-          icon: " "
-        }
-        );
+        var notification = new Notification(options.content);
       }
     }
   },
@@ -1217,9 +1209,10 @@ var page = {
         
         // Send data to caller
         var response = JSON.parse(this.response);
-        options.callback(response);
 
-        console.log(response);
+        if (options.callback) {
+          options.callback(response);
+        }
 
         // If there are no active request, deactivate spinner
         if (page.data.requests.length == 0) {
@@ -1238,7 +1231,6 @@ var page = {
       // Manage requests
       page.data.requests.push(request);
     }
-
   },
   _getEl: function(searchList, searchWord) {
     for (var i = 0; i < searchList.length; i++) {
@@ -1436,18 +1428,8 @@ var page = {
       zoom: 7,
       center: {lat: 55.793398, lng:10.903758}
     });
-    page.data.maps.viewProductsInfoWindow = new google.maps.InfoWindow({
-      content: "Im a info window",
-      maxWidth: 200
-    });
-    /* page.data.maps.editProduct.addListener("click", function(e) {
-      page.placeMarker({
-        e: e,
-        marker: page.data.maps.editProductMarker,
-        positionObject: "editProductMarkerPos",        
-        mode: "event"
-      })
-    }) */
+    page.data.maps.viewProductsInfoWindow = new google.maps.InfoWindow();
+    page.renderProducts();
   },
   placeMarker: function(options ) {
     
