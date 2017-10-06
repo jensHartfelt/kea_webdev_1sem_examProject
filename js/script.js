@@ -1,5 +1,6 @@
 /**
  * NOTES:
+ * I've gone for a OOP-inspired style.
  * In theory page could be named anything
  * BUT im referencing some stuff inside page with page.property/method
  * insted of this.property/method due to problems with 'this' being an
@@ -15,11 +16,9 @@
  * 
  * I've used event.path extensively in the project, but have just found
  * out that this is by far not a standard feature (almost chrome exclusive).
- * For this to work in every browser i would need to add a polyfill.
- * 
- * 
+ * I've implemented a polyfill which can be found in the bottom of this file.
  */
-/* (function() { */
+(function() {
 var page = {
   els: {
     // Elements
@@ -34,6 +33,15 @@ var page = {
      * "global" variables will only exist in one place. Data has no defined
      * mutation methods, so data is just directly modified which can lead to
      * unpredictable outcome.
+     * By wrapping the page-object in a self-invoking function i also make
+     * sure to not pollute the global scope and make data harder to get from
+     * the client
+     * 
+     * NOTE:
+     * Im aware that i dont have to specify all the stuff that is being set 
+     * to undefined. My reasoning for doing this is to have a reference for 
+     * what data im using/expecting in a central location. Otherwise it gets
+     * very hard to reason about what and where data is set. 
      */
     products: {
       visible: undefined, // <- will be set when filtering products
@@ -66,8 +74,7 @@ var page = {
 
       // Vidw products
       viewProducts: undefined,
-      viewProductsMarkers: [],
-      viewProductsActiveId: undefined
+      viewProductsMarkers: []
     }
   },
 
@@ -145,16 +152,20 @@ var page = {
      * products and users).
      * 
      * It prioritizes in this way:
-     * 1) Get and render the pages (html markup)
-     * 2) Get and render the menu (html markup)
+     * 1)  Get and render the pages (html markup)
+     * 2)  Get and render the menu (html markup)
      * 
      * <First paint>
      * 
      * 2b) Get the products while the rest of the script continues (these doesn't have to be ready
-     *     since they selv-initialize their functionality)
-     * 3) Update all element-references from page.els 
-     * 4) Assign event-listeneres and functionality to all the rendered buttons and elements
-     * 5) Navigate to the product-page
+     *     since they selv-initialize their functionality and rendering)
+     * 3)  Update all element-references from page.els
+     * 4)  Assign event-listeneres and functionality to all the rendered buttons and elements
+     * 4b) Get the maps. These are not crucial for first paint so if they are not finished
+     *     the page will not wait for them.
+     * 4c) Render the cart. This is also not super crucial for first paint, so this doesn't
+     *     have to finish before page-render
+     * 5)  Navigate to the product-page (if user is logged in else it'll go to landingpage)
      * 
      * <Page is usable>
      * 
@@ -164,27 +175,37 @@ var page = {
     var self = this;
     var curUser = this.data.currentUser;
 
+    // (1)
     self.getPages(waitForPages);
+    // (2)
     function waitForPages() {
       self.getMenu(waitForMenu);
       if (curUser) {
+        // (2b)
         self.getProducts();
       }
     }
+    // (3)
     function waitForMenu() {
       self.updateEls(waitForEls);
     }
+    // (4)
     function waitForEls() {
       self.attachFormEvents(); // This function can be re-called if something changes and you need to re-assign events      
       self.updatePageNavigation();
+      // (4b)
       self.initMaps();
       if (curUser) {
+        // (4c)
         self.renderCart();
+        // (5)
         self.goTo("view-products");
         if (curUser.role == "admin") {
+          // (6)
           self.getUsers();
         }
       } else {
+        // (5)
         self.goTo("landing-page");
       }
     }
@@ -204,7 +225,8 @@ var page = {
      * sure to not break the script if a button is missing
      * (which will happen with buttons that are dynamically
      * inserted). Maybe do a try ... catch ? I guess this would
-     * also break the page if i.e. the first button is missing
+     * also break the page if i.e. the first button is missing,
+     * but i could output nice error messages :)
      */
     if (typeof btnSignUp !== "undefined") {
       btnSignUp.addEventListener("click", this.signUp);
@@ -255,8 +277,10 @@ var page = {
     function handleResponse(res) {
       if (res.login == "ok") {
         page.data.currentUser = res.user;
+        // If use has a cart use it
         if (res.user.cart) {
           page.data.cart = res.user.cart;
+        // If not set the cart to be empty
         } else {
           res.user.cart = [];
         }
@@ -279,6 +303,7 @@ var page = {
   },
   signUp: function() {
     page.checkForm(frmSignUp, function(status) {
+      // The form is filled out and is fine, so will make the request
       if (status == "ok") {
         page._request({
           type: "POST",
@@ -287,10 +312,12 @@ var page = {
           callback: handleResponse
         });
         function handleResponse(res) {
+          // The request were succesful, a new user has been created, logged in and returned
           if (res.status == "succes") {
             page.data.currentUser = res.user;
             page.getInterface();
             page.clearForm(frmSignUp);
+          // Couldn't create a user. Output an error to the client
           } else if (res.status == "error") {
             page.createNotification({
               type: "negative",
@@ -299,6 +326,7 @@ var page = {
             })
           }
         }
+      // The form is not filled out so will not make a request
       } else {
         page.createNotification({
           type: "negative",
@@ -325,7 +353,6 @@ var page = {
         desktopNotification: true
       })
     }
-    
   },
   editUser: function(e) {
     var jUserData = new FormData(frmEditUser);
@@ -339,8 +366,10 @@ var page = {
       callback: handleResponse
     });
     function handleResponse(res) {
+      // If the request were from an admin update all the users (so the list show the changes)
       if (page.data.currentUser.role == "admin") {
         page.getUsers();
+      // If it were not an admin, update the current user
       } else {
         page.data.currentUser = res.user;
       }
@@ -365,10 +394,10 @@ var page = {
       var user = this.data.currentUser;
     }
     
-    var elFirstName = document.querySelectorAll('[data-page-id="edit-user"] [name="txtFirstName"]')[0];
-    var elLastName = document.querySelectorAll('[data-page-id="edit-user"] [name="txtLastName"]')[0];
-    var elPhone = document.querySelectorAll('[data-page-id="edit-user"] [name="txtPhone"]')[0];
-    var elEmail = document.querySelectorAll('[data-page-id="edit-user"] [name="txtEmail"]')[0];
+    var elFirstName = document.querySelector('[data-page-id="edit-user"] [name="txtFirstName"]');
+    var elLastName = document.querySelector('[data-page-id="edit-user"] [name="txtLastName"]');
+    var elPhone = document.querySelector('[data-page-id="edit-user"] [name="txtPhone"]');
+    var elEmail = document.querySelector('[data-page-id="edit-user"] [name="txtEmail"]');
     elFirstName.value = user.firstName;
     elLastName.value = user.lastName;
     elPhone.value = user.phone;
@@ -395,6 +424,7 @@ var page = {
     });
     function handleResponse(res) {
       page.data.currentUser = undefined;
+      page.data.cart = undefined;
       page.createNotification({
         type: "neutral",
         icon: "delete",
@@ -450,7 +480,6 @@ var page = {
     var btnsEditUser = document.querySelectorAll(".btnAdminEditUser");
     for (var i = 0; i < btnsEditUser.length; i++) {
       btnsEditUser[i].addEventListener("click", function(e) {
-        console.log(e);
         var currentElement = this;
         var currentElementContainer = page._getEl(e.path, "user");
         var sUserId = this.getAttribute("data-user-id");
@@ -493,6 +522,8 @@ var page = {
           page.data.currentUser = res.user;
           if (res.user.cart) {
             page.data.cart = res.user.cart;
+          } else {
+            page.data.cart = [];
           }
         } 
         page.getInterface();
@@ -517,7 +548,6 @@ var page = {
       if (status == "ok" && sProductLocation) {
         var frmDataAddProduct = new FormData(frmAddProduct);
         frmDataAddProduct.append("location", sProductLocation);
-
         page._request({
           type: "POST",
           url: "api/add-product.php",
@@ -550,7 +580,6 @@ var page = {
   editProduct: function() {
     var sProductLocation = useCurrentLocationEdit.checked ? page.data.currentUserPos : page.data.maps.editProductMarkerPos;
     sProductLocation = JSON.stringify(sProductLocation);
-
     var frmDataEditProduct = new FormData(frmEditProduct);
     frmDataEditProduct.append("location", sProductLocation);
 
@@ -592,7 +621,9 @@ var page = {
       callback: function(products) {
         page.data.products.all = products;
         page.data.products.visible = products;
-        page.renderProducts( initFiltersSortingAndViews );
+        page.renderProducts(initFiltersSortingAndViews);
+
+        // Will run when products are rendered to the dom
         function initFiltersSortingAndViews() {
           page.enableProductFiltering();
           page.enableProductSorting();
@@ -602,25 +633,21 @@ var page = {
     });
   },
   renderProducts: function(callback) {
-    //console.log("Rendering products. Sorting: "+page.data.products.sorting)
     var sProducts = "";
     var products = page.data.products.visible;
-
+    
     // If a sorting is defined sort the products the way it is defined
     // before render. Else dont sort the products by skipping this step
     if (page.data.products.sorting !== "none") {
       products = page.sortProducts(products, "price", page.data.products.sorting);
     }
-
+    
+    // If there is any products
     if (products.length) {  
-      for (var i = 0; i < products.length; i++) {
-        
+      var curUser = page.data.currentUser;
 
-        /*****************************
-             RENDERS PRODUCT TO GRID
-        *****************************/        
+      for (var i = 0; i < products.length; i++) {
         // Toggle rendering of edit-buttons
-        var curUser = page.data.currentUser;
         if (curUser.id == products[i].createdBy ||curUser.role == "admin") {
           var sEditProduct = '<a class="edit-product btnEditProductLink">Edit</a>';
         } else {
@@ -643,7 +670,8 @@ var page = {
           }
         }
         // Render product
-        var sProduct = '<div class="product" data-product-id="'+products[i].id+'">\
+        var sProduct = '\
+        <div class="product" data-product-id="'+products[i].id+'">\
           '+sEditProduct+'\
           <div class="image" style="background-image: url(images/product-pictures/'+products[i].picture+')"></div>\
             <div class="product-details">\
@@ -658,9 +686,7 @@ var page = {
         </div>';
         sProducts += sProduct;
 
-        /****************************
-             RENDERS PRODUCT TO MAP
-        *****************************/     
+        // Render markers on map
         // Create a marker for each product
         try {
           var marker = new google.maps.Marker({
@@ -695,6 +721,7 @@ var page = {
     }
   },
   renderProduct: function(options) {
+    // Used to render only one product. Right now it's only used to render the info-window products after actions
     /**
      * options = {
      *  id: "ad9238ads",
@@ -703,15 +730,17 @@ var page = {
      */
 
     var products = page.data.products.all;
+    var curUser = page.data.currentUser;
+
     // Get product that matches the id
     var currentProduct;
     for (var i = 0; i < products.length; i++) {
       if (products[i].id == options.id) {
         currentProduct = products[i];
+        break; // Stop the loop
       }
     } 
 
-    var curUser = page.data.currentUser;
     if (curUser.id == currentProduct.createdBy ||curUser.role == "admin") {
       var sEditProduct = '<a class="edit-product btnEditProductLink">Edit</a>';
     } else {
@@ -764,24 +793,24 @@ var page = {
      * of the window.
      */
 
+    // Manual mode
     if (typeof e === "undefined"){
       var renderOptions = {
         id: options.id,
         for: "infoWindow"
       }
+
+    // Event mode
     } else {
       var renderOptions = {
         id: this.productId,
         for: "infoWindow"
       }
     }
-    page.data.maps.viewProductsInfoWindow.setContent( page.renderProduct(renderOptions) );
+    page.data.maps.viewProductsInfoWindow.setContent(page.renderProduct(renderOptions));
 
     if (typeof e !== "undefined") {
-      page.data.maps.viewProductsInfoWindow.open(
-        page.data.maps.viewProducts,
-        this
-      );
+      page.data.maps.viewProductsInfoWindow.open(page.data.maps.viewProducts, this);
       page.updateEditProductLinks();
       page.updateAddToCartLinks();
     }
@@ -799,7 +828,6 @@ var page = {
         page.updateEditProductForm(productId);
       }
     });
-    
   },
   updateAddToCartLinks: function() {
     page._addEvents({
@@ -815,7 +843,10 @@ var page = {
     /* 
       if a product were to have more data that could be edited
       than what is displayed in the overview this makes sense,
-      else it's a request that could be omitted.
+      else it's a request that isn't really needed.
+      Right now this makes sense for the location, but all the
+      products is stored in the client anyways. This calls for
+      a refactor...
     */
 
     page.activateSpinner();
@@ -826,10 +857,10 @@ var page = {
     })
     function handleResponse(res) {
       // Update form values
-      var elName = document.querySelectorAll('[data-page-id="edit-product"] [name="txtProductName"]')[0];
-      var elPrice = document.querySelectorAll('[data-page-id="edit-product"] [name="txtProductPrice"]')[0];
-      var elId = document.querySelectorAll('[data-page-id="edit-product"] [name="txtProductId"]')[0];
-      var elQuantity = document.querySelectorAll('[data-page-id="edit-product"] [name="txtProductQuantity"]')[0];
+      var elName = document.querySelector('[data-page-id="edit-product"] [name="txtProductName"]');
+      var elPrice = document.querySelector('[data-page-id="edit-product"] [name="txtProductPrice"]');
+      var elId = document.querySelector('[data-page-id="edit-product"] [name="txtProductId"]');
+      var elQuantity = document.querySelector('[data-page-id="edit-product"] [name="txtProductQuantity"]');
       elName.value = res.name;
       elPrice.value = res.price;
       elId.value = res.id;
@@ -861,11 +892,9 @@ var page = {
     page._getUserLocation(handlePosition);
     function handlePosition(pos, status) {
       if (status == "ok") {
-        console.log("handlePosition OK")
         currentRadio.checked = true;
         page.data.currentUserPos = pos;
       } else {
-        console.log("handlePosition error")
         currentRadio.checked = false;
         btnUseCurrentLocationAdd.addEventListener("click", page.handleGettingOfUserLocation);
         btnUseCurrentLocationEdit.addEventListener("click", page.handleGettingOfUserLocation);
@@ -908,7 +937,6 @@ var page = {
   },
   sortProducts: function(arrayToSort, sortingKey, sortingWay) {
     arrayToSort.sort(function(a,b) {
-    //page.data.products.visible.sort(function(a,b) {
       if (sortingWay == "ascending") {
         return a[sortingKey] - b[sortingKey]
       } else {
@@ -920,16 +948,16 @@ var page = {
   enableProductViews: function() {
     var viewProductsPage = document.querySelector('[data-page-id="view-products"]');
     btnShowAsGrid.addEventListener("click", function(e) {
-      viewProductsPage.classList.remove("view-mode-map")
       viewProductsPage.classList.add("view-mode-grid")
       btnShowAsGrid.classList.add("selected")
+      viewProductsPage.classList.remove("view-mode-map")
       btnShowAsMap.classList.remove("selected")
     })
     btnShowAsMap.addEventListener("click", function(e) {
       viewProductsPage.classList.add("view-mode-map")
+      btnShowAsMap.classList.add("selected")
       viewProductsPage.classList.remove("view-mode-grid")
       btnShowAsGrid.classList.remove("selected")
-      btnShowAsMap.classList.add("selected")
     })
   },
 
@@ -1008,7 +1036,6 @@ var page = {
     txtCartStatus.innerText = "Total: "+totalPrice+" DKK";
     page.updateCartIndicator();
     page.updateRemoveFromCartButtons();
-    /* page._saveStateToLocalStorage(); */
   },
   updateRemoveFromCartButtons: function() {
     page._addEvents({
@@ -1020,7 +1047,7 @@ var page = {
     var btnRemoveFromCart = page._getEl(e.path, "btnRemoveFromCart");
     var iCartDeleteIndex = btnRemoveFromCart.getAttribute("data-delete-index");
     var sProductId = page.data.cart[iCartDeleteIndex].id;
-    page.data.cart.splice( iCartDeleteIndex, 1 );
+    page.data.cart.splice(iCartDeleteIndex, 1);
     page.renderCart();
     page.renderProducts();
     page.saveCart();
@@ -1075,6 +1102,7 @@ var page = {
       page.data.cart = [];
       page.renderCart();
       page.getProducts();
+      page.saveCart();
     }
   },
   saveCart: function() {
@@ -1214,6 +1242,13 @@ var page = {
           options.callback(response);
         }
 
+        /**
+         * NOTE:
+         * To see all the requests in the console uncomment line below. It's
+         * quite fun to see what the page is doing when you click around
+         */
+        //console.log(response)
+
         // If there are no active request, deactivate spinner
         if (page.data.requests.length == 0) {
           page.deactivateSpinner();
@@ -1233,6 +1268,11 @@ var page = {
     }
   },
   _getEl: function(searchList, searchWord) {
+    /**
+     * Searches thorugh and array of elements and returns the first that contains
+     * a certain class.
+     */
+
     for (var i = 0; i < searchList.length; i++) {
       if (searchList[i].classList.contains(searchWord)) {
         return searchList[i];
@@ -1267,7 +1307,6 @@ var page = {
     };
     // If there isn't already a position in the system, go ahead and get it
     if (!page.data.currentUserPos) {
-      console.log("Userpos doesnt exsts. Getting it")      
       page.activateSpinner();
       navigator.geolocation.getCurrentPosition(succes, error, options);
       function succes(pos) {
@@ -1480,4 +1519,55 @@ var page = {
   }
 }
 page.init();
-/* })() */
+})()
+
+
+
+
+
+/**
+ * I've relied on e.path without realising that this isn't
+ * a standard feature. Therefore i have polyfilled it.
+ * Full disclosure: this is copy-pasted from stackoverflow
+ * But, just to show that im not blindly copy-pasting i will
+ * try to explain what it does.
+ * 
+ * JS is a prototypal-inheritance based language. This means
+ * that every event will inherit its properties and methods
+ * from Event.prototype (this is also true for strings, object
+ * numbers, arrays and so on - of course from String.prototype 
+ * and so on). 
+ * 
+ * By checking if the prototype of event has the property "path"
+ * i can see if the current browser have and e.path property.
+ * If it doesn't this little snippet will continualy push the 
+ * parent of the current element to an array until the parent
+ * is the document or window, then it will return the array as
+ * Event.path. Which basically is the same thing as chrome's
+ * implementation of e.path. 
+ 
+ 
+ if (copyPasting === "not allowed") {
+   removeCodeBelow()
+   alert("warn teachers that im now only supporting chrome")
+ }
+ 
+ */
+
+if (!("path" in Event.prototype)) {
+  Object.defineProperty(Event.prototype, "path", {
+    get: function() {
+      var path = [];
+      var currentElem = this.target;
+      while (currentElem) {
+        path.push(currentElem);
+        currentElem = currentElem.parentElement;
+      }
+      if (path.indexOf(window) === -1 && path.indexOf(document) === -1)
+        path.push(document);
+      if (path.indexOf(window) === -1)
+        path.push(window);
+      return path;
+    }
+  });
+}

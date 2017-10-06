@@ -4,7 +4,8 @@
   I dont feel super proud of this api. It's allright to work with as long as you change 
   the syntax to html when editing the html-string and php when dealing with the php. An
   alternative could be to use include files and have the markup in partials that would
-  be included. 
+  be included, but since im using some "inline" logic to determine how the page should
+  be rendered, it could end up being sort of difficult to maintain. 
 */
 
 

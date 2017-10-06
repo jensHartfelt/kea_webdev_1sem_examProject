@@ -1,4 +1,4 @@
-/***** GENERAL LAYOUT ******/
+/***************** General Layout *****************/
 * {
   margin: 0;
   padding: 0;
@@ -22,7 +22,8 @@ body {
   overflow-y: scroll;
 }
 
-/* Pages */
+
+/***************** Pages *****************/
 .page {
   position: absolute;
   width: 100%;
@@ -51,7 +52,8 @@ body {
   width: 94%;
 }
 
-/* Typography and forms */
+
+/***************** Typography and forms *****************/
 i.material-icons {
   font-weight: 400;
   font-size: 24px;
@@ -154,9 +156,6 @@ input[type="radio"]:checked+.map-toggle {
   justify-content: center;
   align-items: center;
   height: 100vh;
-/*   max-height: 400px;
-  margin-top: 16px;
-  margin-bottom: 32px; */
   border: 1px #e6e6e6 solid;
   border-radius: 3px;  
   max-height: 0px;
@@ -225,7 +224,8 @@ a.button.invisible:hover {
   border-color:#d9d9d9;
 }
 
-/* Notifications */
+
+/***************** Notifications *****************/
 div.notification {
   position: fixed;
   display: flex;
@@ -281,14 +281,14 @@ div.notification .close-notification i {
   cursor: pointer;
 }
 
-/* Top bar */
+
+/***************** Top bar *****************/
 @media (min-width: 860px) {
   .top-bar {
     display: flex;
     justify-content: space-between;
   }
 }
-
 @media (min-width: 540px) {
   .top-bar .brand {
     display: flex;
@@ -298,7 +298,6 @@ div.notification .close-notification i {
     justify-content: center;
   }
 }
-
 @media (max-width: 730px) {
   .top-bar div.profile-picture {
     display: none !important;
@@ -307,7 +306,6 @@ div.notification .close-notification i {
     display: none;
   }
 }
-
 .top-bar {
   position: fixed;
   width: 100vw;
@@ -377,7 +375,8 @@ a[data-go-to-page="shopping-cart"] {
   background-color: #d9d9d9;
   display: block;
 }
-/* Dropdown */
+
+/***************** Dropdown *****************/
 .dropdown {
   position: relative;
   cursor: pointer;
@@ -467,7 +466,7 @@ a[data-go-to-page="shopping-cart"] {
 }
 
 
-/* Products */
+/***************** Products *****************/
 /* Toggle states between map and products */
 [data-page-id="view-products"].view-mode-grid .products-container{
   visibility: visible;
@@ -476,7 +475,6 @@ a[data-go-to-page="shopping-cart"] {
 [data-page-id="view-products"].view-mode-map .products-map {
   visibility: visible;
   margin-bottom: 50px;
-  
 }
 [data-page-id="view-products"].view-mode-map .container {
   height: auto;
@@ -572,7 +570,7 @@ a[data-go-to-page="shopping-cart"] {
   content: "\E8B6";
 }
 
-/* Google maps product*/ 
+/* Google maps info-window product */ 
 .product.info-window div.image {
   max-height: 120px; 
   width: 100%;
@@ -597,7 +595,6 @@ a[data-go-to-page="shopping-cart"] {
   box-shadow: 0px 0px 0px 0px rgba(0,0,0,0);
   background-color: rgba(0,0,0,0);
 }
-/* Google maps overwrites*/
 .gm-style .gm-style-iw {
   width: 350px !important;
   left: 27px !important;
@@ -607,8 +604,8 @@ a[data-go-to-page="shopping-cart"] {
   transform: scale(1.146);
 }
 
- 
-/* Grid product */
+
+/***************** Grid product *****************/
 .product {
   border: 1px #e6e6e6 solid;
   background-color: #fff; 
@@ -699,11 +696,7 @@ a[data-go-to-page="shopping-cart"] {
 }
 
 
-
-
-
-
-/* Users */
+/***************** Users *****************/
 .user {
   width: 100%;
   padding: 12px 12px 2px 12px;
@@ -789,7 +782,8 @@ a[data-go-to-page="shopping-cart"] {
   content: "\E8A3";
 }
 
-/* Cart-products */
+
+/***************** Cart-products *****************/
 .cart-product {
   width: 100%;
   padding: 8px;
@@ -814,8 +808,6 @@ a[data-go-to-page="shopping-cart"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-.cart-product .title {
 }
 .cart-product .price {
   color: #1c7fe3;
@@ -842,7 +834,8 @@ a[data-go-to-page="shopping-cart"] {
   font-weight: 700;
 }
 
-/* Spinner */ 
+
+/***************** Spinner *****************/
 .spinner-container {
   width: 100vw;
   height: 100vh;
@@ -894,7 +887,7 @@ a[data-go-to-page="shopping-cart"] {
 }
 
 
-/* Utilities */ 
+/***************** Utilities *****************/ 
 .u_mb-xs {margin-bottom: 8px;}
 .u_mb-sm {margin-bottom: 16px;}
 .u_mb-md {margin-bottom: 24px;}
